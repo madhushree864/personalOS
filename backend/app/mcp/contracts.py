@@ -75,3 +75,18 @@ class RenewalReadItem(BaseModel):
 class RenewalReadResponse(BaseModel):
     query: str
     renewals: list[RenewalReadItem] = Field(default_factory=list)
+
+
+class HealthReadItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    id: str
+    date: date
+    metric: str
+    value: float
+    unit: str
+
+
+class HealthReadResponse(BaseModel):
+    metric: str
+    records: list[HealthReadItem] = Field(default_factory=list)

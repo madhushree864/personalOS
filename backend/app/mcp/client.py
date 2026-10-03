@@ -49,7 +49,7 @@ class MCPClient:
             if (
                 self.transport is not None
                 and request.identity.server_name == "personalos-safe-mock"
-                and request.identity.tool_name == "renewal.read"
+                and request.identity.tool_name in {"renewal.read", "health.read"}
             ):
                 data = self.transport.invoke(request, authorization)
             else:

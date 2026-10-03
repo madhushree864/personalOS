@@ -2,10 +2,6 @@ from .contracts import RouteWorkflow
 from .policy import PolicyEngine
 from .validator import RoutingValidator
 from ..services import route_request
-from ..mcp.adapters.renewal import RenewalMCPAdapter
-from ..mcp.client import MCPClient
-from ..mcp.contracts import MCPAuthorizationContext, MCPInvocationRequest, MCPToolIdentity
-from ..mcp.transport import RenewalMCPTransport
 from .contracts import AgentName, Capability, Intent
 
 
@@ -24,6 +20,15 @@ class SupervisorRoutingService:
         if not decision.allowed:
             raise PermissionError(decision.reason)
         if validated.workflow is Intent.RENEWAL_QUERY:
+            from ..mcp.adapters.renewal import RenewalMCPAdapter
+            from ..mcp.client import MCPClient
+            from ..mcp.contracts import (
+                MCPAuthorizationContext,
+                MCPInvocationRequest,
+                MCPToolIdentity,
+            )
+            from ..mcp.transport import RenewalMCPTransport
+
             renewal_client = MCPClient(
                 transport=RenewalMCPTransport(RenewalMCPAdapter(repo))
             )
@@ -52,6 +57,44 @@ class SupervisorRoutingService:
                 "requiresHumanApproval": False,
                 "response": f"I found {len(renewals)} items that may need attention.",
                 "data": {"renewals": renewals},
+            }
+        elif validated.workflow is Intent.HEALTH_QUERY:
+            from ..mcp.adapters.health import HealthMCPAdapter
+            from ..mcp.client import MCPClient
+            from ..mcp.contracts import (
+                MCPAuthorizationContext,
+                MCPInvocationRequest,
+                MCPToolIdentity,
+            )
+            from ..mcp.transport import HealthMCPTransport
+
+            health_client = MCPClient(
+                transport=HealthMCPTransport(HealthMCPAdapter(repo))
+            )
+            health_result = health_client.invoke(
+                MCPInvocationRequest(
+                    request_id=request_id,
+                    identity=MCPToolIdentity(
+                        server_name="personalos-safe-mock",
+                        tool_name="health.read",
+                    ),
+                    capability=Capability.HEALTH_READ,
+                    authenticated_user_id=user.id,
+                    agent=AgentName.HEALTH_SHORT,
+                    input={"metric": ""},
+                ),
+                MCPAuthorizationContext(
+                    user_id=user.id,
+                    agent=AgentName.HEALTH_SHORT,
+                    policy_decision=decision,
+                ),
+            )
+            result = {
+                "agent": "Health Agent",
+                "workflow": "health",
+                "requiresHumanApproval": False,
+                "response": "Health records retrieved with privacy safeguards.",
+                "data": {"rawData": health_result.data["records"]},
             }
         else:
             result = route_request(validated.normalized_query, repo)
