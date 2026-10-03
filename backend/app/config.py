@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     jwt_secret: str = "change-this-development-secret-to-a-long-random-value"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 30
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_collection: str = "personalos_documents"
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property

@@ -42,8 +42,12 @@ class MCPClient:
             raise MCPAuthorizationError("Policy Engine did not approve this capability")
         if not decision.decision.policy_allowed:
             raise MCPAuthorizationError("Policy Engine decision is not approved")
+        if not tool.read_only:
+            raise MCPAuthorizationError("non-read-only tools are not allowed on this MCP boundary")
         try:
-            data = tool.handler(request.input)
+            tool_input = dict(request.input)
+            tool_input["authenticated_user_id"] = authorization.user_id
+            data = tool.handler(tool_input)
         except Exception as exc:
             raise MCPToolExecutionError("registered MCP tool failed") from exc
         return MCPInvocationResult(

@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from .models import AuditEntry, HealthRecord, Holding, InvestmentApproval, InvestmentProposal, Renewal, User
+from .models import AuditEntry, Document, HealthRecord, Holding, InvestmentApproval, InvestmentProposal, Renewal, User
 
 class Repository:
     def __init__(self, db: Session, owner_id: str | None = None):
@@ -33,3 +33,15 @@ class Repository:
     def log(self, event, details=None, user_id=None):
         entry = AuditEntry(event=event, details=details or {}, user_id=user_id or self.owner_id)
         self.db.add(entry); self.db.commit(); self.db.refresh(entry); return entry
+    def create_document(self, **values):
+        document = Document(owner_id=self.owner_id, **values)
+        self.db.add(document)
+        self.db.commit()
+        self.db.refresh(document)
+        return document
+    def document(self, document_id):
+        return self.db.scalar(self._owned(Document).where(Document.id == document_id))
+    def documents(self, limit=100):
+        return list(self.db.scalars(
+            self._owned(Document).order_by(Document.created_at.desc()).limit(limit)
+        ))

@@ -83,3 +83,16 @@ def default_mcp_registry() -> MCPRegistry:
         _market_read,
     )
     return registry
+
+
+def register_document_search_tool(
+    registry: MCPRegistry,
+    handler: Callable[[dict[str, Any]], dict[str, Any]],
+) -> None:
+    """Register a read-only document retrieval handler supplied by the app."""
+    registry.register_tool(
+        MCPToolIdentity(server_name="personalos-safe-mock", tool_name="document.search"),
+        Capability.DOCUMENT_READ,
+        {AgentName.DOCUMENT.value},
+        handler,
+    )

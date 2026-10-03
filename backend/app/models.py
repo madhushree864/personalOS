@@ -89,3 +89,15 @@ class RevokedToken(Base):
     user_id: Mapped[str] = mapped_column(String(64), index=True)
     revoked_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+class Document(Base):
+    __tablename__ = "documents"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=uid)
+    owner_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True, nullable=False)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    document_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="ingested")
+    source: Mapped[str] = mapped_column(String(120), nullable=False, default="upload")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    metadata_json: Mapped[dict] = mapped_column("metadata", JSON, default=dict, nullable=False)

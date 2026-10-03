@@ -91,6 +91,42 @@ def test_mcp_client_cannot_bypass_policy_engine():
         client.invoke(request("market.read"), context)
 
 
+def test_non_read_only_tool_is_rejected_by_safe_mcp_boundary():
+    registry = default_mcp_registry()
+    registry.register_tool(
+        MCPToolIdentity(server_name="personalos-safe-mock", tool_name="document.search"),
+        Capability.DOCUMENT_READ,
+        {AgentName.DOCUMENT.value},
+        lambda payload: {"unexpected": True},
+        read_only=False,
+    )
+    decision = PolicyEngine().evaluate(
+        Intent.DOCUMENT_SEARCH,
+        {"document.read"},
+        user=type("User", (), {"is_active": True})(),
+        ownership_verified=True,
+    )
+    context = MCPAuthorizationContext(
+        user_id="user-001",
+        agent=AgentName.DOCUMENT,
+        policy_decision=decision,
+    )
+    with pytest.raises(MCPAuthorizationError, match="read-only"):
+        MCPClient(registry).invoke(
+            MCPInvocationRequest(
+                request_id="request-1",
+                identity=MCPToolIdentity(
+                    server_name="personalos-safe-mock",
+                    tool_name="document.search",
+                ),
+                capability=Capability.DOCUMENT_READ,
+                authenticated_user_id="user-001",
+                agent=AgentName.DOCUMENT,
+            ),
+            context,
+        )
+
+
 def test_malformed_request_is_rejected():
     with pytest.raises(ValueError):
         MCPInvocationRequest(

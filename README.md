@@ -45,6 +45,36 @@ PersonalOS is a permission-aware personal life, health, and finance supervisor b
 - Financial transactions are simulated and require explicit approval.
 - No real banking or brokerage credentials are used.
 
+## Document Intelligence and RAG foundation
+
+The deterministic Phase 6 document path is:
+
+```text
+Document
+    ↓
+Extraction
+    ↓
+Cleaning
+    ↓
+Chunking
+    ↓
+Embedding
+    ↓
+Qdrant
+    ↓
+Retrieval
+    ↓
+Agent
+```
+
+PostgreSQL stores document metadata and ownership. Qdrant is the optional
+vector-store adapter for semantic chunks and vectors; normal tests use an
+in-memory store. Ownership filtering is mandatory during retrieval and is
+enforced in application/vector-store code. Current extraction, embeddings, and
+retrieval are deterministic/mock implementations with no external document,
+embedding, or LLM provider connected. OCR, cloud storage, background workers,
+and frontend document UI are intentionally out of scope.
+
 ## Backend
 
 The backend uses PostgreSQL through SQLAlchemy (SQLite is the default for local
