@@ -122,5 +122,31 @@ checks. Only synthetic read-only renewal, health, and market tools are
 registered currently. Financial execution remains mock/sandbox-only and is not
 registered as an MCP tool.
 
+## Phase 7 — MCP Server Transport
+
+The MCP servers provide a real protocol transport boundary for deterministic,
+read-only capabilities. They receive an already-authorized context from the
+PersonalOS MCP boundary and do not inspect JWTs, authenticate users, approve
+transactions, or make policy decisions.
+
+Current tools are mapped as follows:
+
+```text
+renewal.read   → Renewal Agent
+health.read    → Health Agent
+market.read    → Stock Analysis Agent
+document.search → Document Agent
+```
+
+The Policy Engine remains authoritative:
+
+```text
+Agent → Policy Engine → approved PolicyDecision → MCP Client → MCP Server → handler
+```
+
+`investment.execute`, broker tools, payment tools, and destructive tools are
+not exposed. The current servers use deterministic/mock handlers and local
+stdio transport; no external service or credential is connected.
+
 ## Authentication
 The API uses short-lived JWT bearer tokens and Argon2 password hashes (with bcrypt verification for staged migrations). Protected resources are isolated by owner ID and permissions are enforced at route boundaries. Permissions use granular dotted names such as `renewal.read`, `renewal.create`, `renewal.update`, `renewal.delete`, `investment.propose`, and `investment.confirm`; there is no administrator bypass for financial actions. Set a strong JWT_SECRET and run `alembic upgrade head` in backend before production deployment. Logout revokes the current JWT and security failures are audited.
