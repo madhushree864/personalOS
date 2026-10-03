@@ -10,8 +10,9 @@ from .registry import MCPRegistry, default_mcp_registry
 class MCPClient:
     """Invokes registered tools only after the existing Policy Engine approves."""
 
-    def __init__(self, registry: MCPRegistry | None = None):
+    def __init__(self, registry: MCPRegistry | None = None, transport=None):
         self.registry = registry or default_mcp_registry()
+        self.transport = transport
 
     def invoke(
         self,
@@ -45,10 +46,19 @@ class MCPClient:
         if not tool.read_only:
             raise MCPAuthorizationError("non-read-only tools are not allowed on this MCP boundary")
         try:
-            tool_input = dict(request.input)
-            tool_input["authenticated_user_id"] = authorization.user_id
-            data = tool.handler(tool_input)
+            if (
+                self.transport is not None
+                and request.identity.server_name == "personalos-safe-mock"
+                and request.identity.tool_name == "renewal.read"
+            ):
+                data = self.transport.invoke(request, authorization)
+            else:
+                tool_input = dict(request.input)
+                tool_input["authenticated_user_id"] = authorization.user_id
+                data = tool.handler(tool_input)
         except Exception as exc:
+            if isinstance(exc, MCPToolExecutionError):
+                raise
             raise MCPToolExecutionError("registered MCP tool failed") from exc
         return MCPInvocationResult(
             request_id=request.request_id,

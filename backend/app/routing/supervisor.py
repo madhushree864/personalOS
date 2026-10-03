@@ -2,6 +2,11 @@ from .contracts import RouteWorkflow
 from .policy import PolicyEngine
 from .validator import RoutingValidator
 from ..services import route_request
+from ..mcp.adapters.renewal import RenewalMCPAdapter
+from ..mcp.client import MCPClient
+from ..mcp.contracts import MCPAuthorizationContext, MCPInvocationRequest, MCPToolIdentity
+from ..mcp.transport import RenewalMCPTransport
+from .contracts import AgentName, Capability, Intent
 
 
 class SupervisorRoutingService:
@@ -18,7 +23,38 @@ class SupervisorRoutingService:
                                          request_id=request_id)
         if not decision.allowed:
             raise PermissionError(decision.reason)
-        result = route_request(validated.normalized_query, repo)
+        if validated.workflow is Intent.RENEWAL_QUERY:
+            renewal_client = MCPClient(
+                transport=RenewalMCPTransport(RenewalMCPAdapter(repo))
+            )
+            renewal_result = renewal_client.invoke(
+                MCPInvocationRequest(
+                    request_id=request_id,
+                    identity=MCPToolIdentity(
+                        server_name="personalos-safe-mock",
+                        tool_name="renewal.read",
+                    ),
+                    capability=Capability.RENEWAL_READ,
+                    authenticated_user_id=user.id,
+                    agent=AgentName.RENEWAL_SHORT,
+                    input={"query": validated.normalized_query},
+                ),
+                MCPAuthorizationContext(
+                    user_id=user.id,
+                    agent=AgentName.RENEWAL_SHORT,
+                    policy_decision=decision,
+                ),
+            )
+            renewals = renewal_result.data["renewals"]
+            result = {
+                "agent": "Renewal Agent",
+                "workflow": "renewal",
+                "requiresHumanApproval": False,
+                "response": f"I found {len(renewals)} items that may need attention.",
+                "data": {"renewals": renewals},
+            }
+        else:
+            result = route_request(validated.normalized_query, repo)
         typed = self.validator.validate_decision(decision.decision)
         # Preserve the legacy response contract while exposing deterministic policy metadata.
         result["policy"] = {"allowed": decision.allowed, "approval": decision.approval.value,

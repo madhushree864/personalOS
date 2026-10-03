@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -58,3 +59,19 @@ class MCPInvocationResult(BaseModel):
     success: bool
     data: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
+
+
+class RenewalReadItem(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    id: str
+    name: str
+    category: str
+    due_date: date = Field(alias="dueDate")
+    reminder_days: int = Field(alias="reminderDays")
+    status: str
+
+
+class RenewalReadResponse(BaseModel):
+    query: str
+    renewals: list[RenewalReadItem] = Field(default_factory=list)
