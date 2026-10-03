@@ -12,6 +12,8 @@ PersonalOS is a permission-aware personal life, health, and finance supervisor b
 - Mock broker sandbox integration and audit logging
 - Phase 3 typed routing contracts, capability registry, deterministic policy
   evaluation, and a policy-gated supervisor service
+- MCP foundation with typed contracts, deterministic tool registration, and
+  policy-approved mock read-only invocation
 - Invariant: **LLM proposes. Validator validates. Policy Engine decides. Services execute only permitted operations.**
 - Modern React frontend and FastAPI/Python backend
 - Docker configuration for local deployment
@@ -61,8 +63,34 @@ configured. Ownership, permissions, policy, and audit logging remain enforced
 at the API boundary.
 Routing components live under `backend/app/routing/` and are intentionally
 side-effect free except for the application audit/repository boundary.
-MCP and LangGraph are future-only integration options and are not installed or
-used. Policy and approval decisions remain outside MCP.
+LangGraph is not installed or used. MCP is now present only as a foundation;
+external integrations remain future work.
+
+## MCP integration boundary
+
+The current integration path is:
+
+```text
+Supervisor
+    ↓
+Routing Validator
+    ↓
+Policy Engine
+    ↓
+Authorized MCP Client
+    ↓
+MCP Server
+    ↓
+External Tool
+```
+
+**MCP is the integration/tool layer. The Policy Engine remains outside MCP and
+decides whether an operation is permitted.** The MCP client only resolves
+explicitly registered tools and accepts an already-approved policy context; it
+does not replace authentication, authorization, ownership, approval, or MFA
+checks. Only synthetic read-only renewal, health, and market tools are
+registered currently. Financial execution remains mock/sandbox-only and is not
+registered as an MCP tool.
 
 ## Authentication
 The API uses short-lived JWT bearer tokens and Argon2 password hashes (with bcrypt verification for staged migrations). Protected resources are isolated by owner ID and permissions are enforced at route boundaries. Permissions use granular dotted names such as `renewal.read`, `renewal.create`, `renewal.update`, `renewal.delete`, `investment.propose`, and `investment.confirm`; there is no administrator bypass for financial actions. Set a strong JWT_SECRET and run `alembic upgrade head` in backend before production deployment. Logout revokes the current JWT and security failures are audited.
