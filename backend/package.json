@@ -1,0 +1,16 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "app/main.py",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "uvicorn app.main:app --reload --port 4000",
+    "start": "uvicorn app.main:app --host 0.0.0.0 --port 4000",
+    "test": "python -m pytest -q"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "uuid": "^10.0.0"
+  }
+}
